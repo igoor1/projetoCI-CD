@@ -1,4 +1,4 @@
-name: CI - CD
+name: CI / CD Pipeline with Argocd
 
 on: 
   push:
@@ -23,5 +23,29 @@ jobs:
         with: 
           context: .
           push: true
-          tags: igoor1/your-disc:${{ github.run_number }}
-    
+          tags: ${{ secrets.DOCKER_USERNAME }}/your-disc:v${{ github.run_number }}
+  
+  CD:
+    needs: [CI]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitOps
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.REPOSITORY }}
+          path: k8s
+          token: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Update manifest
+        run: |
+          cd k8s
+          sed -i 's|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:.*|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:v${{ github.run_number }}|g' deployment.yaml
+
+      - name: Commit and push manifest changes
+        run: |
+          cd k8s
+          git config --local user.name 'github-actions[bot]'
+          git config --local user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "feat: Update image to ${{ github.run_number }}"
+          git push origin main
