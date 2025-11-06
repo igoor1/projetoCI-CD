@@ -3,11 +3,13 @@ name: CI / CD Pipeline with Argocd
 on: 
   push:
     branches: ["main"]
-  workflow_dispatch:
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   CI:
     runs-on: ubuntu-latest
+    
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -28,24 +30,27 @@ jobs:
   CD:
     needs: [CI]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout GitOps
+      - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
           repository: ${{ secrets.REPOSITORY }}
-          path: k8s
-          token: ${{ secrets.SSH_PRIVATE_KEY }}
+          path: projetoci-cd
+          token: ${{ secrets.TOKEN }}
 
       - name: Update manifest
         run: |
-          cd k8s
-          sed -i 's|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:.*|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:v${{ github.run_number }}|g' deployment.yaml
+          cd projetoci-cd
+          sed -i 's|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:.*|image: ${{ secrets.DOCKER_USERNAME }}/your-disc:v${{ github.run_number }}|' k8s/deployment.yaml
 
       - name: Commit and push manifest changes
         run: |
-          cd k8s
+          cd projetoci-cd
           git config --local user.name 'github-actions[bot]'
           git config --local user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .
-          git commit -m "feat: Update image to ${{ github.run_number }}"
+          git add k8s/deployment.yaml
+          git commit -m "ci: Update image to v${{ github.run_number }}"
           git push origin main
