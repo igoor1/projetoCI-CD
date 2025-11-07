@@ -1,61 +1,44 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from . import service, model
 
 app = FastAPI(title= "YourDisc")
-
-class Album(BaseModel):
-    nome: str
-    artista: str
-    ano: str
-
-albums = {
-    1: {"nome": "Nectar", "Artista": "Joji", "ano": "2020"},
-    2: {"nome": "Wait On Me - The 4th Mini Album", "Artista": "Kai", "ano": "2025"},
-    3: {"nome": "SYRE", "Artista": "Jaden", "ano": "2017"},
-    4: {"nome": "Pretty", "Artista": "Artemas", "ano": "2024"},
-    5: {"nome": "White Poney", "Artista": "Deftones", "ano": "2000"}
-}
-
 
 @app.get("/")
 async def root():
     return RedirectResponse(url="/docs")
 
 
-@app.get("/albums")
+@app.get("/albums", response_model=list[model.Album])
 async def get_all():
-    return albums
+    return service.get_all()
 
 
-@app.get("/albums/{album_id}")
+@app.get("/albums/{album_id}", response_model=model.Album)
 async def get_album(album_id: int):
-    if album_id not in albums:
+    album = service.get_album(album_id=album_id)
+    if not album:
         raise HTTPException(status_code=404, detail="Album não encontrado")
-    return albums[album_id]
-
-@app.post("/albums")
-async def create_album(album: Album):
-    global albums
-    novo_id = max(albums.keys()) + 1 
-    albums[novo_id] = album.model_dump()
-    return {"id": novo_id, **album.model_dump()}
+    return album
 
 
-@app.put("/albums/{album_id}")
-async def update_album(album_id: int, album: Album):
-    global albums
-    if album_id not in albums:
+@app.post("/albums", response_model=model.Album, status_code=status.HTTP_201_CREATED)
+async def create_album(album: model.AlbumCreate):
+    return service.create_album(album=album)
+
+
+@app.put("/albums/{album_id}", response_model=model.Album)
+async def update_album(album_id: int, album: model.AlbumCreate):
+    updated_album = service.update_album(album_id=album_id, album=album)
+    if not updated_album:
         raise HTTPException(status_code=404, detail="Album não encontrado")
-    albums[album_id] = album.model_dump()
-    return {"id": album_id, **album.model_dump()}
+    return updated_album
 
 
 @app.delete("/albums/{album_id}")
 async def delete_album(album_id: int):
-    global albums
-    if album_id not in albums:
-        raise HTTPException(status_code=404, detail="Livro não encontrado")
-    del albums[album_id]
+    success = service.delete_album(album_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Album não encontrado")
     return {"message": "Album deletado com sucesso"}
     
