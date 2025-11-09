@@ -10,7 +10,7 @@
 
 ## Visão geral
 
-Este documento descreve o pipeline de integração e entrega continua (CI/CD) para a API Python. O processo é baseado em GitOp, utilizando dois repositórios distintos:
+Este documento descreve o pipeline de integração e entrega contínuas (CI/CD) para a API Python. O processo é baseado em GitOps, utilizando dois repositórios distintos:
 
 1. Repositório da Aplicação(app-repo): Contém o código-fonte da API Python e o workflow de CI.
 
@@ -20,17 +20,19 @@ O objetivo é que, quando um desenvolvedor enviar um novo código para o `app-re
 
 ## Repositórios Relacionados
 
-* **Manifestos:** `https://github.com/igoor1/projetoCI-CD-manifests.git`
-* **Imagem Docker:** `https://hub.docker.com/repository/docker/igoor1/your-disc/general`
+* **Manifestos:** https://github.com/igoor1/projetoCI-CD-manifests.git
+* **Imagem Docker:** https://hub.docker.com/repository/docker/igoor1/your-disc/general
 
 
 ## Índice
 
 - [Pré-requisitos](#pré-requisitos)
+- [Sobre a API](#sobre-a-api-yourdisc)
 - [Etapa 1: Configurando o Repositório da Aplicação (app-repo)](#etapa-1-configurando-o-repositório-da-aplicação-app-repo)
 - [Etapa 2: Configurando o Repositório de Manifestos (manifest-repo)](#etapa-2-configurando-o-repositório-de-manifestos-manifest-repo)
 - [Etapa 3: Configurando o ArgoCD](#etapa-3-configurando-o-argocd)
 - [Etapa 4: Testando o Fluxo](#etapa-4-testando-o-fluxo)
+- [Conclusão](#conclusão)
 
 
 ## Pré-requisitos
@@ -40,6 +42,62 @@ O objetivo é que, quando um desenvolvedor enviar um novo código para o `app-re
 - Rancher Desktop com Kubernetes habilitado.
 - ArgoCD instalado no cluster local.
 - Git, Python 3 e Docker instalados localmente.
+
+
+
+## Sobre a API "YourDisc"
+
+**YourDisc** é uma API REST simples, construída com **FastAPI**, que simula o gerenciamento de uma coleção de álbuns de música.
+
+Seu principal objetivo é demonstrar os conceitos básicos de uma API **CRUD** (Create, Read, Update, Delete) e a separação de responsabilidades em uma aplicação moderna.
+
+### 1. Como Funciona
+
+A simplicidade desta API é sua principal característica. Ela **não utiliza um banco de dados externo**. Em vez disso, ela armazena os dados em um **dicionário Python (`db_albums`)** que fica em memória.
+
+**Importante:** Como os dados estão em memória, **eles não são persistentes**. Qualquer álbum que você adicionar, atualizar ou deletar será perdido assim que a aplicação for reiniciada.
+
+### 2. Estrutura do Projeto
+
+A aplicação é dividida em três partes principais:
+
+1.  **Modelos (`model.py`)**
+    * Define os "schemas" (formatos) dos dados usando Pydantic.
+    * `AlbumBase`: Campos essenciais (nome, artista, ano).
+    * `AlbumCreate`: Usado para criar um novo álbum (herda de `AlbumBase`).
+    * `Album`: O modelo completo, incluindo o `id`, usado para exibir dados.
+
+2.  **Serviços (`service.py`)**
+    * Contém toda a lógica de negócio (as operações CRUD).
+    * São funções que leem, adicionam, atualizam e removem itens diretamente do dicionário `db_albums`.
+    * Isso mantém o arquivo principal (`main.py`) limpo, focado apenas em roteamento.
+
+3.  **API/Endpoint (`main.py`)**
+    * Cria a instância do FastAPI e define os *endpoints* (as URLs).
+    * Recebe as requisições HTTP (GET, POST, etc.) e chama a função de serviço correspondente.
+    * Retorna as respostas para o cliente, incluindo erros (como "Album não encontrado").
+
+### 3. Endpoints Disponíveis
+
+A API fornece os seguintes endpoints para gerenciar os álbuns:
+
+- **`GET /albums`**
+    - Retorna uma lista de todos os álbuns cadastrados.
+
+- **`GET /albums/{album_id}`**
+    - Retorna um álbum específico com base no seu `id`.
+
+- **`GET /docs`**
+    - Exibe a documentação interativa (Swagger UI) da API.    
+
+- **`POST /albums`**
+    - Cria um novo álbum. Requer um JSON no corpo da requisição com `nome`, `artista` e `ano`.
+
+- **`PUT /albums/{album_id}`**
+    - Atualiza um álbum existente. Requer o `id` na URL e um JSON com os dados para atualização.
+
+- **`DELETE /albums/{album_id}`**
+    - Deleta um álbum específico com base no seu `id`.
 
 
 ## Etapa 1: Configurando o Repositório da Aplicação (app-repo)
@@ -201,7 +259,7 @@ spec:
     spec:
       containers:
       - name: yourdisc-api
-        image: igoor1/your-disc:v7
+        image: igoor1/your-disc:latest
         ports:
         - containerPort: 8000
 ```
@@ -232,7 +290,7 @@ spec:
 
 No seu cluster Local acesse o ArgoCD no seu Navegador: https://localhost:8080
 
-![argocd login](https://github.com/user-attachments/assets/71e13e01-b9d8-4610-8e27-6d77464c7b1e)
+![argocd login](https://github.com/user-attachments/assets/3c882051-9db7-4414-8461-bfc31600989d)
 
 1. No ArgoCD, clique em **+ NEW APP**
 
@@ -271,10 +329,10 @@ kubectl port-forward svc/yourdisc-service 8081:8080
 2. Abra seu navegador e acesse a documentação do FastAPI: `http://localhost:8081/docs`.
 
 - Acessando Api pelo navegador:
-![api/docs](https://github.com/user-attachments/assets/d9939e0e-627c-4afd-a42b-b59128745d9e)
+![api/docs](https://github.com/user-attachments/assets/fab006d7-decd-43ad-bbb0-ac783e73923a)
 
 - Fazendo requisição via Postman.
-![postman request](https://github.com/user-attachments/assets/59758d6f-15c4-4121-a71a-601a942b2087)
+![postman request](https://github.com/user-attachments/assets/9dd96a68-af94-4a9c-ab7c-cc03c6987bd2)
 
 
 ## Etapa 4: Testando o Fluxo
@@ -308,3 +366,11 @@ Agora, vá até o seu app-repo (o da API), faça uma alteração no código (ex:
 
 ![your-disc/docs](https://github.com/user-attachments/assets/0802ffc4-45ea-4630-abe5-92037009a797)
 
+
+## Conclusão
+
+Ao concluir este guia, você tem um pipeline de CI/CD totalmente funcional baseado nos princípios do **GitOps**. Onde conectamos o desenvolvimento da aplicação (o app-repo) ao estado da infraestrutura (o manifest-repo), permitindo que o ArgoCD automatize todo o processo de deploy.
+
+- **CI (GitHub Actions):** Constrói a imagem e a publica no Docker Hub.
+- **CD (GitHub Actions + ArgoCD):** A action atualiza o "estado desejado" (a tag da imagem) no repositório de manifestos.
+- **Deploy (ArgoCD):** O ArgoCD detecta a mudança e sincroniza o cluster, atualizando a aplicação sem intervenção manual.
