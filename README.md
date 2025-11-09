@@ -6,7 +6,7 @@
 ![Kubernetes](https://img.shields.io/badge/kubernetes-%23326CE5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![ArgoCD](https://img.shields.io/badge/ArgoCD-%23EF7422.svg?style=for-the-badge&logo=argo&logoColor=white)
 
-# Pipeline CI/CD com Github Ations e GitOps
+# Pipeline CI/CD com GitHub Actions e GitOps
 
 ## Visão geral
 
@@ -52,7 +52,7 @@ O objetivo é que, quando um desenvolvedor enviar um novo código para o `app-re
 
 **Exemplo de `Dockerfile`:**
  
-```bash
+```dockerfile
 FROM python:3.14-slim
 
 WORKDIR /app
@@ -72,10 +72,8 @@ Para o GitHub Actions funcionar, ele precisa de permissões. Vá em **Seu Reposi
 
 ![gh action secret](https://github.com/user-attachments/assets/8bb589df-a744-4793-b2d7-dc7d974731cb)
 
-- **DOCKER_USERNAME:** Seu nome de usuário do DockerHub.
-
-* **`DOCKER_USERNAME`**: Seu nome de usuário do Docker Hub.
-* **`DOCKER_PASSWORD`**:
+- **`DOCKER_USERNAME`**: Seu nome de usuário do Docker Hub.
+- **`DOCKER_PASSWORD`**:
     * Vá ao Docker Hub: **Account Settings > Security > New Access Token**.
     * Dê um nome (ex: `github-actions`) e permissões de **Leitura e Escrita (Read & Write)**.
     * Copie o token gerado e cole aqui.
@@ -104,7 +102,7 @@ Para o GitHub Actions funcionar, ele precisa de permissões. Vá em **Seu Reposi
 2. Dentro dela, crie um arquivo (ex: `ci-cd.yml`).
 3. Copie e cole o código abaixo.
 
-```
+```yaml
 name: CI / CD Pipeline with Argocd
 
 on: 
@@ -184,7 +182,7 @@ SeuProjeto/
 
 k8s/deployment.yaml
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -210,7 +208,7 @@ spec:
 
 k8s/service.yaml
 
-```bash
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -260,17 +258,17 @@ Clique em **CREATE**.
 ![create app](https://github.com/user-attachments/assets/a5564799-37fe-4193-b183-9c1f64b1d4f4)
 ![create app2](https://github.com/user-attachments/assets/d4160929-4854-42ec-a373-d66bdaf0b76e)
 
-Após o ArgoCD sincronizar a aplicação, todos os pods e services estarão rodando no seu cluster. Para acessar a loja virtual (o serviço de frontend) do seu navegador, precisamos expor a porta do serviço para a sua máquina local.
+Após o ArgoCD sincronizar a aplicação, todos os pods e services estarão rodando no seu cluster. Para acessar a api, precisamos expor a porta do serviço para a sua máquina local.
 
 ![argocd app](https://github.com/user-attachments/assets/fc9e3173-a9fa-42e1-87e5-c13ad4ec25b0)
 
 1. Abra um novo terminal (deixe os outros rodando) e execute o comando port-forward:
 
 ```bash
-kubectl port-forward svc/frontend 8081:8080
+kubectl port-forward svc/yourdisc-service 8081:8080
 ```
 
-2. Abra seu navegador e acesse a documentação do FastAPI: `http://localhost:8080/docs`.
+2. Abra seu navegador e acesse a documentação do FastAPI: `http://localhost:8081/docs`.
 
 - Acessando Api pelo navegador:
 ![api/docs](https://github.com/user-attachments/assets/d9939e0e-627c-4afd-a42b-b59128745d9e)
@@ -306,7 +304,7 @@ Agora, vá até o seu app-repo (o da API), faça uma alteração no código (ex:
 ![argocd synced](https://github.com/user-attachments/assets/66df88f9-f95f-46ec-872c-459068b2889b)
 ![kubectl get pods](https://github.com/user-attachments/assets/ae8f610f-1018-499d-a87f-6618b35f4caf)
 
-6. **Aplicação:** A aplicação pode ser acessada pelo navegador já com a alteração aplicada.
+7. **Aplicação:** A aplicação pode ser acessada pelo navegador já com a alteração aplicada.
 
 ![your-disc/docs](https://github.com/user-attachments/assets/0802ffc4-45ea-4630-abe5-92037009a797)
 
